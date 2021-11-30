@@ -1,4 +1,4 @@
-from numpy import cos,sin,pi
+from numpy import cos,sin
 import numpy as np
 
 #=========================================================================================

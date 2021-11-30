@@ -68,8 +68,8 @@ class Koopman(nn.Module):
         self.de = decoder(lifted_state, initial_state, hidden_out, hidden_layer)
         self.K = linear_system(lifted_state+3, lifted_state)
 
-    def forward(self, x,u):
+    def forward(self,x,u):
         x  = self.en(x)
-        x = self.K(torch.cat((x,u),2))
+        x = self.K(torch.cat((x,u)))
         prediction = self.de(x)
         return prediction

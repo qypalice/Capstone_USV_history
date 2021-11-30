@@ -81,29 +81,31 @@ class Loss(nn.Module):
         self.P = P
 
     def forward(self, model,x,u):
-        self.en = model.get_submodule("model.en")
-        self.de = model.get_submodule("model.de")
-        self.K = model.get_submodule("model.K")
+        x = x.squeeze()
+        u = u.squeeze()
+        en = model.get_submodule("en")
+        de = model.get_submodule("de")
+        K = model.get_submodule("K")
 
         #get losses torch.load(saved_model_path)
         # Lx,x = ave(||X(t+i)-decoder(K^i*encoder(Xt))||)
         # Lx,o = ave(||encoder(X(t+i))-K^i*encoder(Xt)||)
         # Lo,x = ave(||Xi-decoder(encoder(Xi))||)
         # Loo = ave(||X(t+i)-decoder(K^i*encoder(Xt))||inf)+ave(||X(t+i)-K^i*encoder(Xt)||)
-        mse = nn.MSELoss()
+        mse = nn.MSELoss(reduction='sum')
         Lxx = 0
         Lxo = 0
         Lox = 0
         Loo = 0
-        K_i_en_x = self.en(x[0,:])
-        en_x = self.en(x)
-        de_en_x = self.de(en_x)
+        K_i_en_x = en(x[0,:])
+        en_x = en(x)
+        de_en_x = de(en_x)
         for i in range(self.P):
-            K_i_en_x = self.K(torch.cat((K_i_en_x,u[i,:]),1))
-            pred = self.de(K_i_en_x)
-            Lxx += mse(x[i+1,:],pred,size_average=False,reduction='sum')
-            Lxo += mse(en_x[i+1,:],K_i_en_x,reduction='sum')
-            Lox += mse(x[i+1,:],de_en_x[i+1,:],reduction='sum')
+            K_i_en_x = K(torch.cat((K_i_en_x,u[i,:])))
+            pred = de(K_i_en_x)
+            Lxx += mse(x[i+1,:],pred)
+            Lxo += mse(en_x[i+1,:],K_i_en_x)
+            Lox += mse(x[i+1,:],de_en_x[i+1,:])
             Loo += torch.norm(x[i+1,:]-pred,p=float("inf"))+torch.norm(x[i+1,:]-de_en_x[i+1,:],p=float('inf'))
         Lxx /= self.P
         Lxo /= self.P
@@ -111,10 +113,12 @@ class Loss(nn.Module):
         Loo /= self.P
 
         # get regularization
-        theta_en = model.get_parameter("model.en")
-        theta_de = model.get_parameter("model.de")
-        L2_en = torch.sum(torch.square(theta_en))
-        L2_de = torch.sum(torch.square(theta_de))
+        L2_en = 0
+        for param in en.parameters():
+            L2_en += (param ** 2).sum()  
+        L2_de = 0
+        for param in de.parameters():
+            L2_de += (param ** 2).sum()  
 
         # get the sum
         loss = self.a1*Lxx + self.a2*Lxo + self.a3*Lox + self.a4*Loo + self.a5*L2_en + self.a6*L2_de
@@ -165,7 +169,7 @@ class Trainer(metaclass=ABCMeta):
             progress_bar.set_description('Epoch ' + str(epoch))
             
             X, U=data
-            X = X.to(self.device, dtype=torch.double)
+            X = X.to(self.device)
             U = U.to(self.device)
             
             self.model.zero_grad()
@@ -190,7 +194,7 @@ class Trainer(metaclass=ABCMeta):
             for i, data in enumerate(loader):
                 
                 X, U=data
-                X = X.to(self.device, dtype=torch.double)
+                X = X.to(self.device)
                 U = U.to(self.device)
                 
                 loss = self.loss_function(self.model,X,U)      
@@ -238,7 +242,7 @@ def train_the_model(trainer, hyper, hidden_layer = 2, epochs=200):
     file_name=f"hyper_{str(hyper)}_hidden_layer_{str(hidden_layer)}"
 
     csv_logger = CSVLogger(filename=f'./logs/{file_name}.csv',
-                       fieldnames=['epoch', 'train_loss', 'test_loss'])
+                       fieldnames=['epoch', 'train_loss', 'val_loss'])
     
     # initialize recording
     experiment_name = file_name+'_{}'.format(datetime.utcnow().strftime('%m-%d-%H-%M'))
@@ -280,7 +284,7 @@ def test_the_model(test_loader, model, loss_function, file_name):
     with torch.no_grad():
         for i, data in enumerate(test_loader):
             X, U=data
-            X = X.to(device, dtype=torch.double)
+            X = X.to(device)
             U = U.to(device)
             loss = loss_function(model,X,U)      
             loss_avg +=loss.item()
