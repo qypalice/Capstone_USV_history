@@ -248,6 +248,7 @@ def train_the_model(device, model, loss_function, train_loader, val_loader, hype
     saved_model_path = './weight/{}_checkpoint.pt'.format(file_name)
     checkpoint = Checkpoint(saved_model_path)
     trainer = Trainer(device, model, loss_function, train_loader, val_loader, batch_size = 1)
+    print(f'Trainer created.', end = "\n")
     
     # initialize recording
     experiment_name = file_name+'_{}'.format(datetime.utcnow().strftime('%m-%d-%H-%M'))
