@@ -3,6 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.nn.init as init
 from data_loader import *
+from model_nn import *
 import csv
 import os
 import sys
@@ -70,60 +71,7 @@ class CSVLogger():
     def close(self):
         self.csv_file.close()
 
-class Loss(nn.Module):
-    def __init__(self,a1, a2, a3, a4, a5, a6, P):
-        super(Loss, self).__init__()
-        self.a1 = a1
-        self.a2 = a2
-        self.a3 = a3
-        self.a4 = a4
-        self.a5 = a5
-        self.a6 = a6
-        self.P = P
 
-    def forward(self, model,x,u):
-        x = x.squeeze()
-        u = u.squeeze()
-        en = model.get_submodule("en")
-        de = model.get_submodule("de")
-        K = model.get_submodule("K")
-
-        #get losses torch.load(saved_model_path)
-        # Lx,x = ave(||X(t+i)-decoder(K^i*encoder(Xt))||)
-        # Lx,o = ave(||encoder(X(t+i))-K^i*encoder(Xt)||)
-        # Lo,x = ave(||Xi-decoder(encoder(Xi))||)
-        # Loo = ave(||X(t+i)-decoder(K^i*encoder(Xt))||inf)+ave(||X(t+i)-K^i*encoder(Xt)||)
-        mse = nn.MSELoss(reduction='sum')
-        Lxx = 0
-        Lxo = 0
-        Lox = 0
-        Loo = 0
-        K_i_en_x = en(x[0,:])
-        en_x = en(x)
-        de_en_x = de(en_x)
-        for i in range(self.P):
-            K_i_en_x = K(torch.cat((K_i_en_x,u[i,:])))
-            pred = de(K_i_en_x)
-            Lxx += mse(x[i+1,:],pred)
-            Lxo += mse(en_x[i+1,:],K_i_en_x)
-            Lox += mse(x[i+1,:],de_en_x[i+1,:])
-            Loo += torch.norm(x[i+1,:]-pred,p=float("inf"))+torch.norm(x[i+1,:]-de_en_x[i+1,:],p=float('inf'))
-        Lxx /= self.P
-        Lxo /= self.P
-        Lox /= self.P
-        Loo /= self.P
-
-        # get regularization
-        L2_en = 0
-        for param in en.parameters():
-            L2_en += (param ** 2).sum()  
-        L2_de = 0
-        for param in de.parameters():
-            L2_de += (param ** 2).sum()  
-
-        # get the sum
-        loss = self.a1*Lxx + self.a2*Lxo + self.a3*Lox + self.a4*Loo + self.a5*L2_en + self.a6*L2_de
-        return loss
 
 class Trainer(metaclass=ABCMeta):
     def __init__(self, device, model, loss_function,
