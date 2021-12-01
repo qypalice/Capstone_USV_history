@@ -1,0 +1,10 @@
+Starting hyper_[1.0, 1.0, 0.2, 1e-09, 1e-10, 1e-09, 4]_hidden_layer_2_11-30-23-38 experiment
+val_loss: 0.771
+Trainer created.
+=> no checkpoint found at './weight/hyper_[1.0, 1.0, 0.2, 1e-09, 1e-10, 1e-09, 4]_hidden_layer_2_checkpoint.pt'
+Loss score: 0.49490040726959705.
+Start simulating...
+
+Dataset produced.
+Dataset saved.
+./dataset/x-[0.1 0.1 0.1 0.5 0.5 1.5]_u-[0.1 0.1 0.1]_0.1x200_Ts_0.01
