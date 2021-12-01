@@ -15,14 +15,13 @@ train_loader, val_loader, test_loader = get_dataloaders(path)
 
 # create trainers
 device = "cuda:0" if torch.cuda.is_available() else "cpu"
-hyper = [1.0,1.0,0.3,0.000000001,0.0000000001,0.000000001,6]
+hyper = [1.0,1.0,0.3,0.000000001,0.0000000001,0.000000001,20]
 loss_function = Loss(hyper[0], hyper[1], hyper[2], hyper[3], hyper[4], hyper[5], hyper[6])
 model = Koopman(hidden_layer=2)
-trainer = Trainer(device, model, loss_function, train_loader, val_loader, batch_size = 16)
 print(f'Trainer created.', end = "\n")
 
 # start training
-file_name = train_the_model(trainer, hyper, hidden_layer = 2, epochs=100)
+file_name = train_the_model(device, model, loss_function, train_loader, val_loader, hyper, hidden_layer = 2, epochs=100)
 plot_learning_curve(file_name)
 
 # get test result

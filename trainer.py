@@ -19,7 +19,8 @@ class Checkpoint(object):
         self.num_bad_epochs = 0
         self.is_better = None
         self.best = None
-    def save_checkpoint(self, state):
+
+    def save(self, model):
         """
         Save best models
         arg:
@@ -27,8 +28,8 @@ class Checkpoint(object):
            is_best: boolen flag to indicate whether the model is the best model or not
            saved_model_path: path to save the best model.
         """
-        print("save best model")
-        torch.save(state['state_dict'], self.saved_model_path)
+        print("model saved.")
+        torch.save(model.state_dict(), self.saved_model_path)
 
         #torch.save(state, self.saved_model_path)
 
@@ -136,7 +137,7 @@ class Trainer(metaclass=ABCMeta):
         self.batch_size = batch_size
         self.optimizer = torch.optim.Adam(self.model.parameters(), lr=1e-3)
 
-    def train(self,  epochs,  csv_logger):
+    def train(self,  epochs,  checkpoint,  csv_logger):
         # initialize parameters
         self._weight_init(self.model)
 
@@ -158,6 +159,7 @@ class Trainer(metaclass=ABCMeta):
             csv_logger.writerow(row)
             
         csv_logger.close()
+        checkpoint.save(self.model)
 
     def train_one_epoch(self, epoch):
         self.model.train()
@@ -237,12 +239,15 @@ def start_logging(filename):
 def stop_logging(f):
     f.close()
 
-def train_the_model(trainer, hyper, hidden_layer = 2, epochs=200):
+def train_the_model(device, model, loss_function, train_loader, val_loader, hyper, hidden_layer = 2, epochs=200):
     # define parameters
     file_name=f"hyper_{str(hyper)}_hidden_layer_{str(hidden_layer)}"
 
     csv_logger = CSVLogger(filename=f'./logs/{file_name}.csv',
                        fieldnames=['epoch', 'train_loss', 'val_loss'])
+    saved_model_path = './weight/{}_checkpoint.pt'.format(file_name)
+    checkpoint = Checkpoint(saved_model_path)
+    trainer = Trainer(device, model, loss_function, train_loader, val_loader, batch_size = 1)
     
     # initialize recording
     experiment_name = file_name+'_{}'.format(datetime.utcnow().strftime('%m-%d-%H-%M'))
@@ -251,7 +256,7 @@ def train_the_model(trainer, hyper, hidden_layer = 2, epochs=200):
     print(f'Starting {experiment_name} experiment')
 
     # start training
-    trainer.train(epochs,  csv_logger)
+    trainer.train(epochs,  checkpoint, csv_logger)
     stop_logging(f)
     sys.stdout = stdo
 
