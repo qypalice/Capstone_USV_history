@@ -170,14 +170,6 @@ class Trainer(metaclass=ABCMeta):
             init.xavier_normal_(m.weight.data)
             init.normal_(m.bias.data)
 
-def get_dataloaders(path):
-    X_train,U_train,X_val,U_val,X_test,U_test = get_data(path)
-
-    # get dataloaders
-    tra_loader = get_loaders(X_train,U_train)
-    val_loader = get_loaders(X_val,U_val)
-    test_loader = get_loaders(X_test,U_test)
-    return tra_loader, val_loader, test_loader
 
 def start_logging(filename):
     f = open('./logs/experiment-{}.txt'.format(filename), 'w')
@@ -227,27 +219,3 @@ def plot_learning_curve(file_name):
     plt.legend(labels=labels)
     plt.show() 
 
-def test_the_model(test_loader, model, loss_function, file_name):
-    device = "cuda:0" if torch.cuda.is_available() else "cpu"
-    saved_model_path = './weight/{}_checkpoint.pt'.format(file_name)
-    checkpoint = Checkpoint(saved_model_path)
-    model=checkpoint.load_saved_model(model)
-    model.eval()
-    
-    loss_avg = 0.
-    with torch.no_grad():
-        for i, data in enumerate(test_loader):
-            X, U=data
-            X = X.to(device)
-            U = U.to(device)
-            loss = loss_function(model,X,U)      
-            loss_avg +=loss.item()
-    loss_avg = loss_avg / (i + 1)
-
-    print(f'Loss score: {str(loss_avg)}.')
-    f = open('./results/{}.txt'.format(file_name), 'w')
-    stdo = sys.stdout
-    sys.stdout = f
-    print(f'Loss score: {str(loss_avg)}.')
-    f.close()
-    sys.stdout = stdo

@@ -70,7 +70,8 @@ class Koopman(nn.Module):
 
     def forward(self,x,u):
         x  = self.en(x)
-        x = self.K(torch.cat((x,u)))
+        print(x.shape)
+        x = self.K(torch.cat((x,u),1))
         prediction = self.de(x)
         return prediction
     
@@ -86,8 +87,7 @@ class Loss(nn.Module):
         self.P = P
 
     def forward(self, model,x,u):
-        x = x.squeeze()
-        u = u.squeeze()
+        # x,u should have 3D structure - (No.trajectory, Time sequence, state)
         '''
         This is used for pytorch 1.10.0 on Google colab
         en = model.get_submodule("en")
@@ -111,16 +111,16 @@ class Loss(nn.Module):
         Lxo = 0
         Lox = 0
         Loo = 0
-        K_i_en_x = en(x[0,:])
+        K_i_en_x = en(x[:,0,:])
         en_x = en(x)
         de_en_x = de(en_x)
         for i in range(self.P):
-            K_i_en_x = K(torch.cat((K_i_en_x,u[i,:])))
+            K_i_en_x = K(torch.cat((K_i_en_x,u[:,i,:]),1))
             pred = de(K_i_en_x)
-            Lxx += mse(x[i+1,:],pred)
-            Lxo += mse(en_x[i+1,:],K_i_en_x)
-            Lox += mse(x[i+1,:],de_en_x[i+1,:])
-            Loo += torch.norm(x[i+1,:]-pred,p=float("inf"))+torch.norm(x[i+1,:]-de_en_x[i+1,:],p=float('inf'))
+            Lxx += mse(x[:,i+1,:],pred)
+            Lxo += mse(en_x[:,i+1,:],K_i_en_x)
+            Lox += mse(x[:,i+1,:],de_en_x[:,i+1,:])
+            Loo += torch.norm(x[:,i+1,:]-pred,p=float("inf"))+torch.norm(x[:,i+1,:]-de_en_x[:,i+1,:],p=float('inf'))
         Lxx /= self.P
         Lxo /= self.P
         Lox /= self.P
