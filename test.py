@@ -38,6 +38,7 @@ def get_prediction(X,U, model, file_name):
     saved_model_path = './weight/{}_checkpoint.pt'.format(file_name)
     checkpoint = Checkpoint(saved_model_path)
     model=checkpoint.load_saved_model(model)
+    model = model.to(device)
     model.eval()
     # get prediction
     X = X.to(device)
@@ -91,16 +92,13 @@ def result_sample(data_path,model,file_name,index=0):
     uu = np.load(data_path+"/U_test.npy")
     xx = xx[index]
     uu = uu[index]
-    X = torch.tensor(xx[:-1]).float()
     U = torch.tensor(uu).float()
+    U = U.unsqueeze(0)
 
     # get prediction
-    device = "cuda:0" if torch.cuda.is_available() else "cpu"
-    saved_model_path = './weight/{}_checkpoint.pt'.format(file_name)
-    checkpoint = Checkpoint(saved_model_path)
-    model=checkpoint.load_saved_model(model)
-    model = model.to(device)
-    model.eval()
-    Y = get_prediction(X,U, model, file_name)
-    yy = Y.cpu().detach().numpy().squeeze()
-    position_plot(yy,xx[1:,:])
+    yy = np.empty((uu.shape[0],6))
+    Y = torch.tensor(np.atleast_2d(xx[0])).float()
+    for i in range(uu.shape[0]):
+        Y = get_prediction(Y,U[:,i,:], model, file_name)
+        yy[i] = Y.cpu().detach().numpy().squeeze()
+    position_plot(yy,xx[1:])

@@ -126,7 +126,7 @@ class Trainer(metaclass=ABCMeta):
             loss = self.loss_function(self.model,X,U)
             loss.backward()
 
-            #torch.nn.utils.clip_grad_norm_(self.model.parameters(), 10.)
+            torch.nn.utils.clip_grad_norm_(self.model.parameters(), 10.)
             self.optimizer.step()
             
             loss_avg +=loss.item()

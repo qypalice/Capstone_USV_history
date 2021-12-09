@@ -70,7 +70,6 @@ class Koopman(nn.Module):
 
     def forward(self,x,u):
         x  = self.en(x)
-        print(x.shape)
         x = self.K(torch.cat((x,u),1))
         prediction = self.de(x)
         return prediction
@@ -96,11 +95,11 @@ class Loss(nn.Module):
         '''
         # This is used for pytorch 1.4.0 on Yiping's labtop (newer version also works)
         submodules = []
-        for idx, m in enumerate(model.named_children()):
+        for idx, m in enumerate(model.children()):
             submodules.append(m)
-        en = submodules[0][1]
-        de = submodules[1][1]
-        K = submodules[2][1]
+        en = submodules[0]
+        de = submodules[1]
+        K = submodules[2]
         #get losses torch.load(saved_model_path)
         # Lx,x = ave(||X(t+i)-decoder(K^i*encoder(Xt))||)
         # Lx,o = ave(||encoder(X(t+i))-K^i*encoder(Xt)||)
@@ -136,4 +135,29 @@ class Loss(nn.Module):
 
         # get the sum
         loss = self.a1*Lxx + self.a2*Lxo + self.a3*Lox + self.a4*Loo + self.a5*L2_en + self.a6*L2_de
+        return loss
+
+class simple_loss(nn.Module):
+    def __init__(self,a1, a2,P):
+        super(simple_loss, self).__init__()
+        self.a1 = a1
+        self.a2 = a2
+        self.P = P
+
+    def forward(self, model,x,u):
+        mse = nn.MSELoss(reduction='sum')
+        acc_loss = 0
+        state = x[:,0,:]
+        for i in range(self.P):
+            state = model(state,u[:,i,:])
+            acc_loss += mse(x[:,i+1,:],state)
+        acc_loss /= self.P
+
+        # get regularization
+        regular = 0
+        for param in model.parameters():
+            regular += (param ** 2).sum()  
+
+        # get the sum
+        loss = self.a1*acc_loss + self.a2*regular
         return loss
