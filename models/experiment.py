@@ -33,7 +33,7 @@ if __name__ == '__main__':
     loss_function = Loss(hyper[0], hyper[1], hyper[2], hyper[3], hyper[4], hyper[5], hyper[6])
 
     # start training
-    file_name = train_the_model(device, model, loss_function, train_loader, val_loader, hyper,epochs=2)
+    file_name = train_the_model(device, model, loss_function, train_loader, val_loader, hyper,epochs=100)
     plot_learning_curve(file_name)
 
     # get test result
