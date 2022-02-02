@@ -1,9 +1,10 @@
 import os
+import sys
 os.environ["KMP_DUPLICATE_LIB_OK"]="TRUE"
 from train import *
-from model_nn import Koopman
+from model_nn import Koopman,Loss
 from data_loader import produce_dataset, get_dataloaders
-from test import *
+from test_function import *
 import numpy as np
 import torch
 
@@ -32,7 +33,7 @@ if __name__ == '__main__':
     loss_function = Loss(hyper[0], hyper[1], hyper[2], hyper[3], hyper[4], hyper[5], hyper[6])
 
     # start training
-    file_name = train_the_model(device, model, loss_function, train_loader, val_loader, hyper,epochs=100)
+    file_name = train_the_model(device, model, loss_function, train_loader, val_loader, hyper,epochs=2)
     plot_learning_curve(file_name)
 
     # get test result
@@ -40,4 +41,4 @@ if __name__ == '__main__':
     print(file_name)
     
     # see single trajectory(optional)
-    result_sample(path,model,file_name,index=10)
+    result_sample(path,model,file_name,index=2)
