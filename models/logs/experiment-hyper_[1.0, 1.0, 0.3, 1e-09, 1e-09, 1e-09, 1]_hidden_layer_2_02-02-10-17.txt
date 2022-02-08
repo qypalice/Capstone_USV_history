@@ -1,5 +1,0 @@
-Starting hyper_[1.0, 1.0, 0.3, 1e-09, 1e-09, 1e-09, 1]_hidden_layer_2_02-02-10-17 experiment
-val_loss: 6.659
-val_loss: 6.653
-val_loss: 6.648
-model saved.

@@ -3,7 +3,7 @@ import sys
 os.environ["KMP_DUPLICATE_LIB_OK"]="TRUE"
 from train import *
 from model_nn import Koopman,Loss
-from data_loader import produce_dataset, get_dataloaders
+from data_loader_ruled import produce_dataset, get_dataloaders
 from test_function import *
 import numpy as np
 import torch
@@ -11,14 +11,17 @@ import torch
 if __name__ == '__main__':
     initial_out = sys.stdout
     # create dataset (optional)
+    noise_range = 0.01
+    dest_range = np.array([10,10,2])
+    K = 10
     #x_range = np.array([1.,1.,1.,0.5,0.5,1.5])
     #u_range = np.array([0.5,0.5,0.5])
     x_var= 0.01
     u_var= 0.01
-    SimLength=20
+    SimLength=50
     Ntraj = 50000
     Ts=0.01
-    path = produce_dataset(x_var,u_var,SimLength,Ntraj,Ts)
+    path = produce_dataset(noise_range,dest_range,K,SimLength,Ntraj,Ts)
     sys.stdout = initial_out
     print(path)
     
