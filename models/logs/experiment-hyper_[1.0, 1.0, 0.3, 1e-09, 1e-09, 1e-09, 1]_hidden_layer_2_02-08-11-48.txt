@@ -91,3 +91,12 @@ val_loss: 0.062
 val_loss: 0.062
 val_loss: 0.062
 val_loss: 0.062
+val_loss: 0.063
+val_loss: 0.062
+val_loss: 0.064
+val_loss: 0.063
+val_loss: 0.063
+val_loss: 0.062
+val_loss: 0.062
+val_loss: 0.062
+model saved.
