@@ -57,7 +57,7 @@ def simulation(noise_range,dest_range,K,SimLength=10,Ntraj=1000,Ts=0.01):
 
         # Simulate one trajectory
         for j in range(SimLength):
-            u = K*(dest[i,:].squeeze()-x[3:6])
+            u = K*(dest[i,:].squeeze()-x[3:6])+noise_range*rand(1,3).squeeze()
             x = discrete_nonlinear(x,u,Ts)
             xx[j+1,:] = x
             U[i,j,:] = u

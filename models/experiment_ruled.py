@@ -1,7 +1,7 @@
 import os
 import sys
 os.environ["KMP_DUPLICATE_LIB_OK"]="TRUE"
-from train import *
+from train_ruled import *
 from model_nn import Koopman,Loss
 from data_loader_ruled import produce_dataset, get_dataloaders
 from test_function import *
@@ -11,15 +11,15 @@ import torch
 if __name__ == '__main__':
     initial_out = sys.stdout
     # create dataset (optional)
-    noise_range = 0.01
-    dest_range = np.array([10,10,2])
-    K = 10
+    noise_range = 0.05
+    dest_range = np.array([5,5,2])
+    K = 8
     #x_range = np.array([1.,1.,1.,0.5,0.5,1.5])
     #u_range = np.array([0.5,0.5,0.5])
     x_var= 0.01
     u_var= 0.01
-    SimLength=50
-    Ntraj = 50000
+    SimLength=10
+    Ntraj = 100000
     Ts=0.01
     path = produce_dataset(noise_range,dest_range,K,SimLength,Ntraj,Ts)
     sys.stdout = initial_out
@@ -33,7 +33,7 @@ if __name__ == '__main__':
     device = "cuda:0" if torch.cuda.is_available() else "cpu"
     
     # create trainer
-    model = Koopman(n=6,K=10)
+    model = Koopman(n=6,K=20)
     hyper = [1.0,1.0,0.3,0.000000001,0.000000001,0.000000001,1]
     loss_function = Loss(hyper[0], hyper[1], hyper[2], hyper[3], hyper[4], hyper[5], hyper[6])
 

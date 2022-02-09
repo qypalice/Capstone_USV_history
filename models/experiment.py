@@ -13,10 +13,10 @@ if __name__ == '__main__':
     # create dataset (optional)
     #x_range = np.array([1.,1.,1.,0.5,0.5,1.5])
     #u_range = np.array([0.5,0.5,0.5])
-    x_var= 0.01
-    u_var= 0.01
-    SimLength=20
-    Ntraj = 50000
+    x_var= 0.1
+    u_var= 0.1
+    SimLength=10
+    Ntraj = 100000
     Ts=0.01
     path = produce_dataset(x_var,u_var,SimLength,Ntraj,Ts)
     sys.stdout = initial_out

@@ -88,20 +88,22 @@ def position_plot(pred,truth):
 
 def result_sample(data_path,model,file_name,index=0):
     # get data
-    xx = np.load(data_path+"/X_test.npy")
-    uu = np.load(data_path+"/U_test.npy")
+    #xx = np.load(data_path+"/X_test.npy")
+    #uu = np.load(data_path+"/U_test.npy")
+    xx = np.load(data_path+"/X_train.npy")
+    uu = np.load(data_path+"/U_train.npy")
     xx = xx[index]
-    #uu = uu[index]
-    uu = np.array([[0.5,0.5,0.5]])
-    U = torch.tensor(uu).float()
-    #U = U.unsqueeze(0)
-
+    uu = uu[index]
+    #uu = np.array([[0.5,0.5,0.5]])
+    #U = torch.tensor(uu).float()
+    
     # get prediction
     yy = np.empty((xx.shape[0],6))
     yy[0] = xx[0]
     Y = torch.tensor(np.atleast_2d(xx[0])).float()
     for i in range(1,xx.shape[0]):
-        #Y = get_prediction(Y,U[:,i-1,:], model, file_name)
+        U = torch.tensor(np.atleast_2d(uu[i-1])).float()
+        #print(U)
         Y = get_prediction(Y,U, model, file_name)
         yy[i] = Y.cpu().detach().numpy().squeeze()
     position_plot(yy,xx)

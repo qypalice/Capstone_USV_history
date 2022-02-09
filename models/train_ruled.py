@@ -183,7 +183,7 @@ def stop_logging(f):
 
 def train_the_model(device, model, loss_function, train_loader, val_loader, hyper, hidden_layer = 2, epochs=200):
     # define parameters
-    file_name=f"hyper_{str(hyper)}"
+    file_name=f"hyper_{str(hyper)}_ruled"
 
     csv_logger = CSVLogger(filename=f'./logs/{file_name}.csv',
                        fieldnames=['epoch', 'train_loss', 'val_loss'])
