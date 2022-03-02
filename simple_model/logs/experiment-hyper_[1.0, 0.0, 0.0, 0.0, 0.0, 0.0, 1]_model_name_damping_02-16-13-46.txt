@@ -1,0 +1,5 @@
+Starting hyper_[1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1]_model_name_damping_02-16-13-46 experiment
+val_loss: 30.593
+val_loss: 30.593
+val_loss: 30.593
+model saved.

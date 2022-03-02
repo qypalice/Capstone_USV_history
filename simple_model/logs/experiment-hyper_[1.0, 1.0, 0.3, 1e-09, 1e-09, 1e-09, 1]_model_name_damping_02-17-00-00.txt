@@ -1,0 +1,3 @@
+Starting hyper_[1.0, 1.0, 0.3, 1e-09, 1e-09, 1e-09, 1]_model_name_damping_02-17-00-00 experiment
+[4;33mReloaded modules[24m: nonlinear_model, data_loader, train_new, train, test_function, model_nn[0m
+Trainer created.

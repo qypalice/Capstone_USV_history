@@ -1,0 +1,1 @@
+Starting hyper_[1.0, 1.0, 0.3, 1e-09, 1e-09, 1e-09, 1]_ruled_02-19-12-54 experiment

@@ -1,0 +1,12 @@
+Starting hyper_[1.0, 1.0, 0.3, 1e-09, 1e-09, 1e-09, 1]_ruled_02-19-13-04 experiment
+val_loss: 0.024
+val_loss: 0.023
+val_loss: 0.013
+val_loss: 0.012
+val_loss: 0.012
+val_loss: 0.012
+val_loss: 0.012
+val_loss: 0.012
+val_loss: 0.010
+val_loss: 0.010
+model saved.
