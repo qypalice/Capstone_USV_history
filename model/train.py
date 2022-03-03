@@ -118,7 +118,7 @@ class Trainer(metaclass=ABCMeta):
             
             csv_logger.writerow(row)
             checkpoint.early_stopping(loss_val, self.model)
-            if checkpoint.num_bad_epochs>=100:
+            if checkpoint.num_bad_epochs>=50:
                 tqdm.write("Early stopping with {:.3f} best score, the model did not improve after {} iterations".format(
                         checkpoint.best, checkpoint.num_bad_epochs))
                 break
