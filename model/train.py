@@ -95,13 +95,14 @@ class Trainer(metaclass=ABCMeta):
         self.train_loader = train_loader
         self.val_loader = val_loader
         self.batch_size = batch_size
-        self.optimizer = torch.optim.Adadelta(self.model.parameters(),rho=0.4,weight_decay=1e-9)
+        self.optimizer = torch.optim.Adadelta(self.model.parameters(),lr=0.1, rho=0.8)
 
     def train(self,  epochs,  checkpoint,  csv_logger):
         # initialize parameters
         self._weight_init(self.model)
 
         # start training
+        patience = min(int(epochs*0.5),50)
         train_loss = []
         val_loss  = []    
 
@@ -118,7 +119,7 @@ class Trainer(metaclass=ABCMeta):
             
             csv_logger.writerow(row)
             checkpoint.early_stopping(loss_val, self.model)
-            if checkpoint.num_bad_epochs>=50:
+            if checkpoint.num_bad_epochs>=patience:
                 tqdm.write("Early stopping with {:.3f} best score, the model did not improve after {} iterations".format(
                         checkpoint.best, checkpoint.num_bad_epochs))
                 break

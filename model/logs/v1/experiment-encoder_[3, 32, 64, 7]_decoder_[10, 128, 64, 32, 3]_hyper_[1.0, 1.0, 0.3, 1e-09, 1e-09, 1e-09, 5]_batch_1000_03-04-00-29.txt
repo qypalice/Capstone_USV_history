@@ -1,0 +1,19 @@
+Starting encoder_[3, 32, 64, 7]_decoder_[10, 128, 64, 32, 3]_hyper_[1.0, 1.0, 0.3, 1e-09, 1e-09, 1e-09, 5]_batch_1000_03-04-00-29 experiment
+val_loss: 1.032
+val_loss: 0.622
+model saved.
+val_loss: 0.476
+model saved.
+val_loss: 0.416
+model saved.
+val_loss: 0.370
+model saved.
+val_loss: 0.339
+model saved.
+val_loss: 0.321
+model saved.
+val_loss: 0.295
+model saved.
+val_loss: 0.252
+model saved.
+val_loss: 0.272

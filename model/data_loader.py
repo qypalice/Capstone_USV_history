@@ -29,6 +29,7 @@ def simulation(x_range,u_range,SimLength=10,Ntraj=1000,Ts=0.01):
     # run and collect data
     X = np.empty((Ntraj,SimLength+1,3))
     U = uniform(low=-u_range, high=u_range, size=(Ntraj,SimLength,2))# initialize
+    #U = uniform(low=np.array([0,-u_range[1]]), high=u_range, size=(Ntraj,SimLength,2))# initialize
     pbar = tqdm(total=Ntraj)
     for i in range(Ntraj):
         xx = np.empty((SimLength+1,3))

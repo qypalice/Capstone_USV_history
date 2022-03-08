@@ -12,11 +12,13 @@ def test_the_model(test_loader, file_name):
     arguments = file_name.split('_')
     en = list(map(int,arguments[1][1:-1].split(', ')))
     de = list(map(int,arguments[3][1:-1].split(', ')))
+    hyper = list(map(float,arguments[5][1:-1].split(', ')))
 
     # set model
     device = "cuda:0" if torch.cuda.is_available() else "cpu"
     model = Koopman(en,de)
-    loss_function = torch.nn.MSELoss()
+    loss_function = Loss(hyper[0], hyper[1], hyper[2], hyper[3], hyper[4], hyper[5], int(hyper[6]))
+    mse = torch.nn.MSELoss()
     saved_model_path = './weight/{}_checkpoint.pt'.format(file_name)
     checkpoint = Checkpoint(saved_model_path)
     model=checkpoint.load_saved_model(model)
@@ -25,24 +27,29 @@ def test_the_model(test_loader, file_name):
     
     #start calculation
     loss_avg = 0.
+    score_avg = 0.
     progress_bar = tqdm(test_loader)
     with torch.no_grad():
         for i, data in enumerate(progress_bar):
             X, U=data
             X = X.to(device)
             U = U.to(device)
-            #loss = loss_function(model,X,U)
+            loss = loss_function(model,X,U)
             Y = get_prediction(X,U,model)
-            loss = loss_function(X,Y)
+            score = mse(X,Y)
             loss_avg +=loss.item()
+            score_avg += score.item()
     loss_avg = loss_avg / (i + 1)
+    score_avg = score_avg / (i + 1)
 
     #print result in kernal and txt file
     stdo = sys.stdout
-    print(f'\nLoss score: {str(loss_avg)}.')
+    print(f'\nGeneral loss: {str(loss_avg)}.')
+    print(f'\nMSE loss: {str(score_avg)}.')
     f = open('./results/{}.txt'.format(file_name), 'w')
     sys.stdout = f
-    print(f'Loss score: {str(loss_avg)}.')
+    print(f'\nGeneral loss: {str(loss_avg)}.')
+    print(f'\nMSE loss: {str(score_avg)}.')
     f.close()
     sys.stdout = stdo
 
@@ -74,18 +81,40 @@ def position_plot(preds,truth):
         legend_list.append('model '+str(i+1))
 
     # plot
-    plt.figure(figsize=(9,4.5))
-    plt.subplot(121)
+    plt.figure(figsize=(9,9))
+    plt.subplot(221)
+    plt.plot(t,truth[:,0])
+    for i in range(num_model):
+        plt.plot(t,preds[i,:,0],'o-')
+    plt.grid(True)
+    plt.xlabel('Time t')
+    plt.ylabel('x direction')
+    plt.title('X position change')
+    plt.legend(legend_list)
+
+    plt.subplot(222)
+    plt.plot(t,truth[:,1])
+    for i in range(num_model):
+        plt.plot(t,preds[i,:,1],'o-')
+    plt.grid(True)
+    plt.grid(True)
+    plt.title('Y position change')
+    plt.xlabel('Time t')
+    plt.ylabel('y direction')
+    plt.legend(legend_list)
+    
+    plt.subplot(223)
     plt.plot(truth[:,0],truth[:,1])
     for i in range(num_model):
         plt.plot(preds[i,:,0],preds[i,:,1],'o-')
     plt.grid(True)
-    plt.xlabel('y direction')
-    plt.ylabel('x direction')
-    plt.title('location change')
+    plt.grid(True)
+    plt.title('Angle change')
+    plt.xlabel('x direction')
+    plt.ylabel('y direction')
     plt.legend(legend_list)
 
-    plt.subplot(122)
+    plt.subplot(224)
     plt.plot(t,truth[:,2])
     for i in range(num_model):
         plt.plot(t,preds[i,:,2],'o-')

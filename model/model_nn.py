@@ -82,6 +82,7 @@ class Loss(nn.Module):
         K = model.get_submodule("K")
         '''
         # This is used for pytorch 1.4.0 on Yiping's labtop (newer version also works)
+        k = 9
         submodules = []
         for idx, m in enumerate(model.children()):
             submodules.append(m)
@@ -104,9 +105,9 @@ class Loss(nn.Module):
         for i in range(self.P):
             K_i_en_x = K(K_i_en_x,u[:,i,:])
             pred = de(K_i_en_x)
-            Lxx += mse(x[:,i+1,:],pred)
+            Lxx += mse(x[:,i+1,:2],pred[:,:2])*k+mse(x[:,i+1,2],pred[:,2])
             Lxo += mse(en_x[:,i+1,:],K_i_en_x)
-            Lox += mse(x[:,i+1,:],de_en_x[:,i+1,:])
+            Lox += mse(x[:,i+1,:2],de_en_x[:,i+1,:2])*k+mse(x[:,i+1,2],de_en_x[:,i+1,2])
             Loo += torch.norm(x[:,i+1,:]-pred,p=float("inf"))+torch.norm(x[:,i+1,:]-de_en_x[:,i+1,:],p=float('inf'))
         ave = x.size(0)*self.P
         Lxx /= ave
@@ -116,37 +117,72 @@ class Loss(nn.Module):
 
         # get regularization
         L2_en = 0
-        #for param in en.parameters():
-        #    L2_en += (param ** 2).sum()  
+        for param in en.parameters():
+            L2_en += (param ** 2).sum()  
         L2_de = 0
-        #for param in de.parameters():
-        #    L2_de += (param ** 2).sum()  
+        for param in de.parameters():
+            L2_de += (param ** 2).sum()  
 
         # get the sum
-        loss = self.a1*Lox + self.a2*Lxx + self.a3*Lxo + self.a4*Loo + self.a5*L2_en + self.a6*L2_de
+        loss = self.a1*Lox + self.a2*Lxx + self.a3*k*Lxo + self.a4*k*Loo + self.a5*L2_en + self.a6*L2_de
         return loss
 
-class simple_loss(nn.Module):
-    def __init__(self,a1, a2,P):
-        super(simple_loss, self).__init__()
+class Loss_new(nn.Module):
+    def __init__(self,a1, a2, a3, P):
+        super(Loss, self).__init__()
         self.a1 = a1
         self.a2 = a2
+        self.a3 = a3
         self.P = P
 
     def forward(self, model,x,u):
+        # x,u should have 3D structure - (No.trajectory, Time sequence, state)
+        '''
+        This is used for pytorch 1.10.0 on Google colab
+        en = model.get_submodule("en")
+        de = model.get_submodule("de")
+        K = model.get_submodule("K")
+        '''
+        # This is used for pytorch 1.4.0 on Yiping's labtop (newer version also works)
+        k = 10
+        submodules = []
+        for idx, m in enumerate(model.children()):
+            submodules.append(m)
+        en = submodules[0]
+        de = submodules[1]
+        K = submodules[2]
+        #get losses torch.load(saved_model_path)
+        # Lx,x = ave(||X(t+i)-decoder(K^i*encoder(Xt))||)
+        # Lx,o = ave(||encoder(X(t+i))-K^i*encoder(Xt)||)
+        # Lo,x = ave(||Xi-decoder(encoder(Xi))||)
+        # Loo = ave(||X(t+i)-decoder(K^i*encoder(Xt))||inf)+ave(||X(t+i)-K^i*encoder(Xt)||)
         mse = nn.MSELoss(reduction='sum')
-        acc_loss = 0
-        state = x[:,0,:]
-        for i in range(self.P):
-            state = model(state,u[:,i,:])
-            acc_loss += mse(x[:,i+1,:],state)
-        acc_loss /= self.P
+        K_i_en_x = en(x[:,0,:])
+        en_x = en(x)
+        de_en_x = de(en_x)
+        L_pred = 0
+        L_recon = mse(x[:,0,:],de_en_x[:,0,:])
+        L_lin = 0
+        Loo = 0
+        for i in range(x.size(1)):
+            K_i_en_x = K(K_i_en_x,u[:,i,:])
+            if i < self.P:
+                pred = de(K_i_en_x)
+                L_pred += mse(x[:,i+1,:1],pred[:,:1])*k+mse(x[:,i+1,2],pred[:,2])
+            L_lin += mse(en_x[:,i+1,:],K_i_en_x)
+            if i == 0:
+                Loo += torch.norm(x[:,1,:]-pred,p=float("inf"))+torch.norm(x[:,0,:]-de_en_x[:,0,:],p=float('inf'))
+        L_pred = L_pred/(x.size(0)*self.P)
+        L_lin = L_lin/(x.size(0)*x.size(1))
 
         # get regularization
-        regular = 0
-        for param in model.parameters():
-            regular += (param ** 2).sum()  
+        L2_en = 0
+        for param in en.parameters():
+            L2_en += (param ** 2).sum()  
+        L2_de = 0
+        for param in de.parameters():
+            L2_de += (param ** 2).sum()  
 
         # get the sum
-        loss = self.a1*acc_loss + self.a2*regular
+        loss = self.a1*(L_recon+L_pred) + L_lin +self.a2*Loo + self.a3*(L2_en + L2_de)
         return loss
