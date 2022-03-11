@@ -16,7 +16,7 @@ if __name__ == '__main__':
     epochs = 300
     model_num = 0
     # Varying steps
-    for i in [2,6,10]:
+    for i in [5,10]:
         # get parameters
         model_num += 1
         K = 6
