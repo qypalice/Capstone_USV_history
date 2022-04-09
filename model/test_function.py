@@ -83,9 +83,9 @@ def position_plot(preds,truth):
     # plot
     plt.figure(figsize=(9,9))
     plt.subplot(221)
-    plt.plot(t,truth[:,0])
+    plt.plot(t,truth[:,0],'o-')
     for i in range(num_model):
-        plt.plot(t,preds[i,:,0],'o-')
+        plt.plot(t,preds[i,:,0])
     plt.grid(True)
     plt.xlabel('Time t')
     plt.ylabel('x direction')
@@ -93,9 +93,9 @@ def position_plot(preds,truth):
     plt.legend(legend_list)
 
     plt.subplot(222)
-    plt.plot(t,truth[:,1])
+    plt.plot(t,truth[:,1],'o-')
     for i in range(num_model):
-        plt.plot(t,preds[i,:,1],'o-')
+        plt.plot(t,preds[i,:,1])
     plt.grid(True)
     plt.grid(True)
     plt.title('Y position change')
@@ -104,9 +104,9 @@ def position_plot(preds,truth):
     plt.legend(legend_list)
     
     plt.subplot(223)
-    plt.plot(truth[:,0],truth[:,1])
+    plt.plot(truth[:,0],truth[:,1],'o-')
     for i in range(num_model):
-        plt.plot(preds[i,:,0],preds[i,:,1],'o-')
+        plt.plot(preds[i,:,0],preds[i,:,1])
     plt.grid(True)
     plt.grid(True)
     plt.title('Angle change')
@@ -115,9 +115,9 @@ def position_plot(preds,truth):
     plt.legend(legend_list)
 
     plt.subplot(224)
-    plt.plot(t,truth[:,2])
+    plt.plot(t,truth[:,2],'o-')
     for i in range(num_model):
-        plt.plot(t,preds[i,:,2],'o-')
+        plt.plot(t,preds[i,:,2])
     plt.grid(True)
     plt.grid(True)
     plt.title('Angle change')

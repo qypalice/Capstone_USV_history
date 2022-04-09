@@ -224,7 +224,7 @@ def train_the_model(train_loader, val_loader, arg, batch_size=10,epochs=200):
     print(f'Starting {experiment_name} experiment')
 
     # start training
-    trainer.train(epochs,  checkpoint, csv_logger)
+    trainer.train(epochs, checkpoint, csv_logger)
     stop_logging(f)
     sys.stdout = stdo
 
@@ -246,3 +246,24 @@ def plot_learning_curve(file_name):
     plt.legend(labels=labels)
     plt.show() 
 
+def save_model_as_numpy(file_name):
+    # get parameters
+    arguments = file_name.split('_')
+    en = list(map(int,arguments[1][1:-1].split(', ')))
+    de = list(map(int,arguments[3][1:-1].split(', ')))
+    hyper = list(map(float,arguments[5][1:-1].split(', ')))
+
+    # set model
+    model = Koopman(en,de)
+    saved_model_path = './weight/{}_checkpoint.pt'.format(file_name)
+    checkpoint = Checkpoint(saved_model_path)
+    model=checkpoint.load_saved_model(model)
+    
+    # create dictionary
+    param = {}
+    for name,parameters in model.named_parameters():
+        print(name,':',parameters.size())
+        param[name]=parameters.detach().numpy()
+    
+    # save as numpy file\
+    np.save('./numpy_weight/'+file_name,param)
