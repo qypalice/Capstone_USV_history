@@ -5,7 +5,9 @@ from numpy.random import rand,randint,uniform
 from nonlinear_model import discrete_nonlinear
 import matplotlib.pyplot as plt
 import os
+from numpy import pi
 
+du_range = np.array([1,0.5])
 def simulation(x_range,u_range,SimLength=10,Ntraj=1000,Ts=0.01):
     '''
     This function is to get simulated trajectories of the USV, and save 
@@ -26,10 +28,16 @@ def simulation(x_range,u_range,SimLength=10,Ntraj=1000,Ts=0.01):
     (i)  For random input in [-u_range,u_range]
     (ii) For initial state, it is fixed with noise added.(Vary if needed, TBA)
     '''
-    # run and collect data
+    # generate x
     X = np.empty((Ntraj,SimLength+1,3))
-    U = uniform(low=-u_range, high=u_range, size=(Ntraj,SimLength,2))# initialize
-    #U = uniform(low=np.array([0,-u_range[1]]), high=u_range, size=(Ntraj,SimLength,2))# initialize
+    # generate u
+    U = uniform(low=-u_range, high=u_range, size=(Ntraj,SimLength,2))
+    for i in range(SimLength-1):
+        U[:,i+1,:] = U[:,i,:]+uniform(low=-du_range, high=du_range, size=(Ntraj,2))
+        for j in range(Ntraj):
+            U[j,i,:] = np.fmin(U[j,i,:],u_range)
+            U[j,i,:] = np.fmax(U[j,i,:],-u_range)
+    
     pbar = tqdm(total=Ntraj)
     for i in range(Ntraj):
         xx = np.empty((SimLength+1,3))
@@ -40,66 +48,14 @@ def simulation(x_range,u_range,SimLength=10,Ntraj=1000,Ts=0.01):
 
         # Simulate one trajectory
         for j in range(SimLength):
-            #u = K*np.array([[np.sqrt((dest[i,0]-x[0])**2+(dest[i,1]-x[1])**2)],[dest[i,2]-x[2]]]).squeeze()
-            #e_v = (dest[i,0]-x[0])*np.cos(x[2])+(dest[i,1]-x[1])*np.sin(x[2])
-            #e_w = np.arctan((dest[i,1]-x[1])/(dest[i,0]-x[0]))
-            #u = K*np.array([[e_v],[e_w]]).squeeze()
             u = U[i,j,:]
             x = discrete_nonlinear(x,u,Ts)
             x = x.squeeze()
+            if x[2] > pi:
+                x[2] -= 2*pi
+            elif x[2] < -pi:
+                x[2] += 2*pi
             xx[j+1,:] = x
-        # Store
-        X[i,:,:] = xx
-        pbar.update(1)
-    pbar.close()
-    return X,U
-
-def simulation_ruled(noise_range,dest_range,K,SimLength=10,Ntraj=1000,Ts=0.01):
-    '''
-    This function is to get simulated trajectories of the USV, and save 
-    the trajectories and relevant input in numpy file. 
-
-    Input Parameters:
-    noise_range     a small float to show the noise range of the initial state
-    dest_range      a large 2*1 numpy array, to show the range of the destination
-    K               The proportional feedback controller parameter
-    SimLength       the length of the trajectory, unit is the sampling period
-    Ntraj           the number of trajectories, i.e. size of the dataset
-    Ts              sampling period
-
-    Return:
-    filename is to provide the parameter information of the dataset
-
-    Simulation rules:
-    (i)  For input, assume error is "e", input is K*e
-    (ii) For initial state, it is fixed with noise added.(Vary if needed, TBA)
-    '''
-    # produce a series of destination
-    dest = rand(Ntraj,2)*2-1+rand(Ntraj,2)*noise_range
-    dest[:,0] = dest[:,0]*dest_range[0]
-    dest[:,1] = dest[:,1]*dest_range[1]
-
-    # run and collect data
-    X = np.empty((Ntraj,SimLength+1,3))
-    U = np.empty((Ntraj,SimLength,2))   # initialize
-    pbar = tqdm(total=Ntraj)
-    for i in range(Ntraj):
-        xx = np.empty((SimLength+1,3))
-        # Intial state is a random vector within given range
-        x = np.zeros((1,3))+rand(1,3)*noise_range
-        x = x.squeeze()
-        xx[0,:] = x
-
-        # Simulate one trajectory
-        for j in range(SimLength):
-            #u = K*np.array([[np.sqrt((dest[i,0]-x[0])**2+(dest[i,1]-x[1])**2)],[dest[i,2]-x[2]]]).squeeze()
-            e_v = (dest[i,0]-x[0])*np.cos(x[2])+(dest[i,1]-x[1])*np.sin(x[2])
-            e_w = np.arctan((dest[i,1]-x[1])/(dest[i,0]-x[0]))
-            u = K*np.array([[e_v],[e_w]]).squeeze()
-            x = discrete_nonlinear(x,u,Ts)
-            x = x.squeeze()
-            xx[j+1,:] = x
-            U[i,j,:] = u
         # Store
         X[i,:,:] = xx
         pbar.update(1)
@@ -110,7 +66,7 @@ def produce_dataset(x_range,u_range,SimLength=10,Ntraj=1000,Ts=0.01):
     print("Start simulating...")
     X_train,U_train = simulation(x_range,u_range,SimLength,int(0.6*Ntraj),Ts)
     X_val,U_val = simulation(x_range,u_range,SimLength,int(0.2*Ntraj),Ts)
-    X_test,U_test = simulation(x_range*0.5,u_range*0.5,SimLength,int(0.2*Ntraj),Ts)
+    X_test,U_test = simulation(x_range*0.5,u_range*0.5,SimLength*2,int(0.2*Ntraj),Ts)
 
     # save the matrix
     print("\nDataset produced.")

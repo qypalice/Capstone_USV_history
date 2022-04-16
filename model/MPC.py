@@ -13,100 +13,46 @@ from nonlinear_model import discrete_nonlinear
 
 # define global parameters
 Ts = 0.1
-u_min = 10*np.array([-1.5,-0.5])
-u_max = 10*np.array([1.5,0.5])
-du_min = 10*np.array([-1.,-0.3])
-du_max = 10*np.array([1.,0.3])
+x_min = np.array([-2,-2])
+x_max = np.array([2,2])
+u_min = np.array([-1.5,-0.5])
+u_max = np.array([1.5,0.5])
+du_min = np.array([-1.,-0.3])
+du_max = np.array([1.,0.3])
 #eps_min = np.array([-1.,-0.3])
 #eps_max = np.array([1.,0.3])
 
-def simulate_path(SimLength):
+def simulate_path(init_x,SimLength):
     # initialize
-    X = np.zeros((3,SimLength+1))
-    U = np.zeros((2,SimLength))
-
-    '''# define u
-    s1 = SimLength/3
-    s2 = SimLength/3
-    s3 = SimLength/3
+    X = np.zeros((2,SimLength+1))
+    X[:,0] = init_x.squeeze()[:-1]
+    # several step 
+    s1 = SimLength/4
+    s2 = SimLength/2
+    s3 = 3*SimLength/4
     for i in range(SimLength-1):
-        if i<s1:
-            U[:,i+1] = U[:,i]+0.05*np.multiply(du_max,rand(2))
-        elif i<s2:
-            U[:,i+1] = U[:,i]+0.05*np.multiply(du_min,rand(2))
-        elif i<s3:
-            U[:,i+1] = U[:,i]+0.05*np.array([du_min[0]*rand(),du_max[1]*rand()])
-        else:
-            U[:,i+1] = U[:,i]+0.05*np.array([du_max[0]*rand(),du_min[1]*rand()])
-        U[:,i+1] = np.maximum(U[:,i+1],u_min)
-        U[:,i+1] = np.minimum(U[:,i+1],u_max)
-
-    # start simulation as save state
-    for i in range(SimLength):
-        X[:,i+1] = discrete_nonlinear(X[:,i],U[:,i],Ts)'''
-    X = 0.3*np.array([np.cos(np.linspace(1*pi, 0, num=SimLength)),np.sin(np.linspace(1*pi, 0, num=SimLength))-1])
+        if i<s1:# go east
+            X[:,i+1] = X[:,i]+0.8*np.array([1,0])
+        elif i<s2:# go north
+            X[:,i+1] = X[:,i]+0.8*np.array([0,1])
+        elif i<s3:# go west
+            X[:,i+1] = X[:,i]+0.6*np.array([-1,0])
+        else:# go south
+            X[:,i+1] = X[:,i]+0.6*np.array([0,-1])
+        X[:,i+1] = np.maximum(X[:,i+1],x_min)
+        X[:,i+1] = np.minimum(X[:,i+1],x_max)
     path = f'./dataset/MPC/SimLenth_{str(SimLength)}_Ts_{str(Ts)}'
     if not os.path.exists(path):
       os.makedirs(path)
-    np.save(path+"/X",X[:2,:])
+    sim = {}
+    sim['init state'] = init_x
+    sim['path'] = X
+    np.save(path,sim)
     print(path)
 
     return path
 
-def get_Augmented_Matrix(A,B,Q,R,rho,Np,Nc):
-    """
-    input:
-    A,B     matrices of linear system
-    Q,R     penalty matrices for MPC
-    rho     v
-    """
-    '''determine matrices when input is delta u instead of u
-    A_bar = [A      B
-            O(m*L)  I(m*m)]
-    B_bar = [B
-            I(m*m)]
-    C = [I(L*L) O(L*m)]
-    state = [lifted state
-            input u]
-    '''
-    L = A.shape[0]
-    m = B.shape[1]
-    A_bar = np.zeros((m+L,m+L))
-    A_bar[0:L,0:L] = A
-    A_bar[0:L,L:] = B
-    A_bar[L:,L:] = np.eye(m)
-    B_bar = np.r_[B,np.eye(m)]
-    C = np.zeros((L,m+L))
-    #C[:2,:2] = np.eye(2)
-    C[:L,:L] = np.eye(L)
-
-    # get more straight forward matrices for MPC (more steps)
-    Gamma = C @ A_bar
-    Qbig = np.zeros((L*Np,L*Np))
-    Qbig[0:L,0:L] = Q
-    for i in range(1,Np):
-        Gamma = np.r_[Gamma,C @ matrix_power(A_bar,i+1)]
-        Qbig[i*L:(i+1)*L,i*L:(i+1)*L] = Q
-
-    Theta_r = C @ B_bar
-    for i in range(1,Np-Nc+1):
-        Theta_r = np.r_[Theta_r,(C @ matrix_power(A_bar,i)) @ B_bar]
-    Theta = np.r_[np.zeros((L*(Nc-1),m)),Theta_r]
-    Rbig = np.zeros((m*Nc,m*Nc))
-    Rbig[0:m,0:m] = R
-    for i in range(1,Nc):
-        Rbig[i*m:(i+1)*m,i*m:(i+1)*m] = R
-        Theta_r = np.r_[Theta_r,(C @ matrix_power(A_bar,Np-Nc+i)) @ B_bar]
-        Theta = np.c_[np.r_[np.zeros((L*(Nc-1-i),m)),Theta_r],Theta]
-    
-    # calculate penalty matrix
-    rho = rho*np.eye(m*(Np-Nc))
-    H = np.r_[np.c_[Theta.T @ Qbig @ Theta+Rbig,np.zeros((m*Nc,m*(Np-Nc)))],
-            np.c_[np.zeros((m*(Np-Nc),m*Nc)),rho]]
-    return Gamma,Theta,Qbig,H
-
 def MPC_solver(Q,R,rho,A,B,Yref,x,u,Nc):
-    m = 2
     # define variables -- the combination of dU and slack variable eps
     #group = SX.sym('dU',Np*2)
     U = cp.Variable((2,Nc+1))
@@ -119,7 +65,7 @@ def MPC_solver(Q,R,rho,A,B,Yref,x,u,Nc):
     # define constraints
     cons = [eps>=0,Y[:,0]==x,U[:,0]==u]
     for t in range(Nc):
-        obj += cp.quad_form(Y[:,t+1]-Yref[:,t],Q) + cp.quad_form(U[:,t+1]-U[:,t],R)
+        obj += cp.quad_form(Y[:,t+1]-Yref,Q) + cp.quad_form(U[:,t+1]-U[:,t],R)
         cons += [Y[:,t+1] == A@Y[:,t] + B@U[:,t+1],
                 u_min<=U[:,t+1], u_max>=U[:,t+1],
                 du_min-eps<=U[:,t+1]-U[:,t], du_max+eps>=U[:,t+1]-U[:,t]]
@@ -130,6 +76,11 @@ def MPC_solver(Q,R,rho,A,B,Yref,x,u,Nc):
     print(eps.value)
     u = U[:,1].value
     y = Y[:,1].value
+    # plot the prediction
+    pred = np.zeros((11,Nc))
+    for i in range(Nc):
+        pred[:,i] = Y[:,i+1].value
+    MPC_lifted_plot(Yref,pred,Nc)
     return u,y
 
 
@@ -156,7 +107,7 @@ def MPC_control_process(model_file,path_ref,init_input,Q,R,rho,Nc): #temp
     lifted_path = lifted_ref.copy()
     t_avg = 0
     # start contorl simulation
-    for i in range(1,path.shape[1]-Nc):
+    for i in range(1,5):#path.shape[1]-Nc):
         print('Step '+str(i)+' - MSE error in lifted space,state x, input u:')
         T1 = time.perf_counter()
         u,y = MPC_solver(Q,R,rho,A,B,lifted_ref[:,i:i+Nc],y,u,Nc)

@@ -20,10 +20,9 @@ class Koopman_numpy:
                     self.de['weight'].append(param)
                 else:
                     self.de['bias'].append(param)
-            elif name[:1]=='K':
-                K = param
-                self.A = K[:,:-2]
-                self.B = K[:,-2:]
+        K = params['K.layer.weight']*params['K.layer.mask']
+        self.A = K[:,:-2]
+        self.B = K[:,-2:]
         
     def encode(self,x):
         lifted_x = x

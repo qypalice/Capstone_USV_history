@@ -102,7 +102,7 @@ class Trainer(metaclass=ABCMeta):
         self._weight_init(self.model)
 
         # start training
-        patience = min(int(epochs*0.5),50)
+        patience = min(int(epochs*0.5),20)
         train_loss = []
         val_loss  = []    
 

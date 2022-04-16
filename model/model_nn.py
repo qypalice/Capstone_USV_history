@@ -1,5 +1,47 @@
+import math
 import torch
 import torch.nn as nn
+from torch.nn.parameter import Parameter
+import torch.nn.functional as F
+
+class masked_Linear(nn.Module):
+    __constants__ = ['bias', 'in_features', 'out_features']
+
+    def __init__(self, in_features, out_features, bias=True):
+        super(masked_Linear, self).__init__()
+        self.in_features = in_features
+        self.out_features = out_features
+        self.mask = torch.zeros([out_features, in_features])
+        for i in range(out_features):
+            self.mask[i,i] = 1
+            if i > 2:
+                if i%2 == 0:
+                    self.mask[i,i-1] = 1
+                else:
+                    self.mask[i,i+1] = 1
+        self.mask[-2:,:] = 1
+        self.mask = Parameter(self.mask)
+        self.weight = Parameter(torch.Tensor(out_features, in_features))
+        if bias:
+            self.bias = Parameter(torch.Tensor(out_features))
+        else:
+            self.register_parameter('bias', None)
+        self.reset_parameters()
+
+    def reset_parameters(self):
+        nn.init.kaiming_uniform_(self.weight, a=math.sqrt(5))
+        if self.bias is not None:
+            fan_in, _ = nn.init._calculate_fan_in_and_fan_out(self.weight)
+            bound = 1 / math.sqrt(fan_in)
+            nn.init.uniform_(self.bias, -bound, bound)
+
+    def forward(self, input):
+        return F.linear(input, self.weight.masked_fill(self.mask==0, value=0), self.bias)
+
+    def extra_repr(self):
+        return 'in_features={}, out_features={}, bias={}'.format(
+            self.in_features, self.out_features, self.bias is not None
+        )
 
 class encoder(nn.Module):
     def __init__(self,struct):
@@ -42,7 +84,7 @@ class decoder(nn.Module):
 class linear_system(nn.Module):
     def __init__(self,lifeted_state):
         super(linear_system, self).__init__()
-        self.layer=nn.Linear(lifeted_state+2,lifeted_state,bias=False)
+        self.layer=masked_Linear(lifeted_state+2,lifeted_state,bias=False)
 
     def forward(self, x,u):
         x = self.layer(torch.cat((x,u),-1))
