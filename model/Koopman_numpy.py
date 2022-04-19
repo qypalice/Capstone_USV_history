@@ -20,7 +20,10 @@ class Koopman_numpy:
                     self.de['weight'].append(param)
                 else:
                     self.de['bias'].append(param)
-        K = params['K.layer.weight']*params['K.layer.mask']
+        if 'K.layer.mask' in params:
+            K = params['K.layer.weight']*params['K.layer.mask']
+        else:
+            K = params['K.layer.weight']
         self.A = K[:,:-2]
         self.B = K[:,-2:]
         
@@ -53,6 +56,8 @@ class Koopman_numpy:
             controllability_matrix = np.c_[controllability_matrix,controllability_column]
         if np.linalg.matrix_rank(controllability_matrix) == self.A.shape[0]:
             print("The system is controllable.")
+        else:
+            print("The system is uncontrollable, the rank of the controllability matrix is "+str(np.linalg.matrix_rank(controllability_matrix))+".")
 
 
 

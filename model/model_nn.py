@@ -19,7 +19,7 @@ class masked_Linear(nn.Module):
                     self.mask[i,i-1] = 1
                 else:
                     self.mask[i,i+1] = 1
-        self.mask[-2:,:] = 1
+        self.mask[:,-2:] = 1
         self.mask = Parameter(self.mask)
         self.weight = Parameter(torch.Tensor(out_features, in_features))
         if bias:

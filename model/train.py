@@ -88,9 +88,9 @@ class Trainer(metaclass=ABCMeta):
                 train_loader, val_loader, batch_size=16):    
         # import param
         self.device = device
-        self.model = model.to(device)
         if torch.cuda.device_count() > 1:
             model = nn.DataParallel(model)
+        self.model = model.to(device)
         self.loss_function = loss_function
         self.train_loader = train_loader
         self.val_loader = val_loader

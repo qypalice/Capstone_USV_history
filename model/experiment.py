@@ -18,7 +18,7 @@ if __name__ == '__main__':
     sys.stdout = initial_out
     print(path)
     # get parameters
-    K = 8
+    K = 6
     arg = {
         'encoder':[3,32,64,K],
         'decoder':[K+3,128,64,32,3],
