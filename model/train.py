@@ -48,6 +48,7 @@ class Checkpoint(object):
         saved_model_path = self.saved_model_path
 
         if os.path.isfile(saved_model_path):
+            print("old model loaded.")
             model.load_state_dict(torch.load(saved_model_path))
         else:
             print("=> no checkpoint found at '{}'".format(saved_model_path))
@@ -100,9 +101,10 @@ class Trainer(metaclass=ABCMeta):
     def train(self,  epochs,  checkpoint,  csv_logger):
         # initialize parameters
         self._weight_init(self.model)
+        checkpoint.load_saved_model(self.model)
 
         # start training
-        patience = min(int(epochs*0.5),20)
+        patience = min(int(epochs*0.5),30)
         train_loss = []
         val_loss  = []    
 

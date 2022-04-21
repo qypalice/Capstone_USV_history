@@ -1,0 +1,4 @@
+Starting encoder_[3, 32, 64, 8]_decoder_[11, 128, 64, 32, 3]_hyper_[1.0, 3.0, 0.3, 1e-07, 1e-07, 1e-07, 10]_batch_10_04-21-05-56 experiment
+val_loss: 1.288
+val_loss: 1.349
+Early stopping with 1.288 best score, the model did not improve after 1 iterations

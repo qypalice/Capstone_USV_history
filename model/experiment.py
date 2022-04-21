@@ -18,7 +18,7 @@ if __name__ == '__main__':
     sys.stdout = initial_out
     print(path)
     # get parameters
-    K = 8
+    K = 6
     arg = {
         'encoder':[3,32,64,K],
         'decoder':[K+3,128,64,32,3],
@@ -32,6 +32,7 @@ if __name__ == '__main__':
 
     # start training
     file_name = train_the_model(train_loader, val_loader, arg, batch_size, epochs)
+    save_model_as_numpy(file_name)
     # get test result
     test_the_model(test_loader, file_name)
     print(file_name)

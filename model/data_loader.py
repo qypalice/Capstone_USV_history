@@ -31,12 +31,18 @@ def simulation(x_range,u_range,SimLength=10,Ntraj=1000,Ts=0.01):
     # generate x
     X = np.empty((Ntraj,SimLength+1,3))
     # generate u
-    U = uniform(low=-u_range, high=u_range, size=(Ntraj,SimLength,2))
+    U0 = uniform(low=-u_range, high=u_range, size=(int(Ntraj/4),SimLength,2))
     for i in range(SimLength-1):
-        U[:,i+1,:] = U[:,i,:]+uniform(low=-du_range, high=du_range, size=(Ntraj,2))
-        for j in range(Ntraj):
-            U[j,i,:] = np.fmin(U[j,i,:],u_range)
-            U[j,i,:] = np.fmax(U[j,i,:],-u_range)
+        U0[:,i+1,:] = U0[:,i,:]+uniform(low=-du_range, high=du_range, size=(int(Ntraj/4),2))
+        for j in range(int(Ntraj/4)):
+            U0[j,i,:] = np.fmin(U0[j,i,:],u_range)
+            U0[j,i,:] = np.fmax(U0[j,i,:],-u_range)
+    U_v = U0[:,:,0]
+    U_w = U0[:,:,1]
+    U1 = np.stack((-U_v,U_w),axis=2)
+    U2 = np.stack((U_v,-U_w),axis=2)
+    U3 = np.stack((-U_v,-U_w),axis=2)
+    U = np.vstack((U0,U1,U2,U3))
     
     pbar = tqdm(total=Ntraj)
     for i in range(Ntraj):
@@ -51,10 +57,6 @@ def simulation(x_range,u_range,SimLength=10,Ntraj=1000,Ts=0.01):
             u = U[i,j,:]
             x = discrete_nonlinear(x,u,Ts)
             x = x.squeeze()
-            if x[2] > pi:
-                x[2] -= 2*pi
-            elif x[2] < -pi:
-                x[2] += 2*pi
             xx[j+1,:] = x
         # Store
         X[i,:,:] = xx
