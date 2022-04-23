@@ -9,19 +9,19 @@ import numpy as np
 if __name__ == '__main__':
     initial_out = sys.stdout
     # create dataset (optional)
-    x_range = np.array([3.,3.,np.pi])
+    x_range = np.array([2.,2.,np.pi])
     u_range = np.array([1.5,0.5])
     SimLength=20
-    Ntraj = 300000
+    Ntraj = 500000
     Ts=0.1
     path = produce_dataset(x_range,u_range,SimLength,Ntraj,Ts)
     sys.stdout = initial_out
     print(path)
     # get parameters
-    K = 6
+    K = 10
     arg = {
         'encoder':[3,32,64,K],
-        'decoder':[K+3,128,64,32,3],
+        'decoder':[K,128,64,32,3],
         'hyper':[1.0,3.0,0.3,1e-7,1e-7,1e-7,10]
     }
 

@@ -17,8 +17,8 @@ x_min = np.array([-3,-3])
 x_max = np.array([3,3])
 u_min = np.array([-1.5,-0.5])
 u_max = np.array([1.5,0.5])
-du_min = np.array([-1.,-0.3])
-du_max = np.array([1.,0.3])
+du_min = np.array([-1.5,-0.5])
+du_max = np.array([1.5,0.5])
 #eps_min = np.array([-1.,-0.3])
 #eps_max = np.array([1.,0.3])
 
@@ -30,15 +30,24 @@ def simulate_path(init_x,SimLength):
     s1 = SimLength/4
     s2 = SimLength/2
     s3 = 3*SimLength/4
-    for i in range(SimLength-1):
-        if i<s1:# go east
+    interval = SimLength/8
+    for i in range(SimLength):
+        if i<interval:# go east
             X[:,i+1] = X[:,i]+0.1*np.array([1,0])
-        elif i<s2:# go north
+        elif i<2*interval:
+            X[:,i+1] = X[:,i]+0.1*np.array([1,1])
+        elif i<3*interval:# go north
             X[:,i+1] = X[:,i]+0.1*np.array([0,1])
-        elif i<s3:# go west
-            X[:,i+1] = X[:,i]+0.2*np.array([-1,0])
-        else:# go south
-            X[:,i+1] = X[:,i]+0.2*np.array([0,-1])
+        elif i<4*interval:
+            X[:,i+1] = X[:,i]+0.1*np.array([-1,1])
+        elif i<5*interval:# go west
+            X[:,i+1] = X[:,i]+0.1*np.array([-1,0])
+        elif i<6*interval:
+            X[:,i+1] = X[:,i]+0.1*np.array([-1,-1])
+        elif i<7*interval:# go south
+            X[:,i+1] = X[:,i]+0.1*np.array([0,-1])
+        else:
+            X[:,i+1] = X[:,i]+0.1*np.array([1,-1])
         X[:,i+1] = np.maximum(X[:,i+1],x_min)
         X[:,i+1] = np.minimum(X[:,i+1],x_max)
     path = f'./dataset/MPC/SimLenth_{str(SimLength)}_Ts_{str(Ts)}'
@@ -74,7 +83,7 @@ def MPC_solver(Q,R,rho,A,B,Yref,x,u,Nc,Isplot):
     prob = cp.Problem(cp.Minimize(obj),cons)
     prob.solve(solver=cp.OSQP, eps_abs=1e-6,verbose=False)
     #print(prob.status)
-    print(eps.value)
+    #print(eps.value)
     u = U[:,1].value
     y = Y[:,1].value
     # plot the prediction
@@ -271,6 +280,13 @@ def MPC_control_process_closed(model_file,ref,init_input,init_state,Q,R,rho,Nc,t
     # generate angle
     diff = ref[:,1:]-ref[:,:-1]
     angle = np.arctan2(diff[1,:],diff[0,:])
+    diff = angle[1:]-angle[:-1]
+    '''for i in range(diff.shape[0]):
+        if diff[i]<-pi:
+            angle = angle + 2*pi*(np.ones((1,angle.shape[0]))-np.tri(1,angle.shape[0],i))[0]
+        elif diff[i]>pi:
+            angle = angle - 2*pi*(np.ones((1,angle.shape[0]))-np.tri(1,angle.shape[0],i))[0]'''
+    print(angle)
     ref = np.r_[ref,np.c_[init_state[2],np.array([angle])]]
     
     # lift the reference
@@ -296,11 +312,16 @@ def MPC_control_process_closed(model_file,ref,init_input,init_state,Q,R,rho,Nc,t
     # start contorl simulation
     step = 0
     for i in range(1,ref.shape[1]):
-        lifted_ref = operater.encode(ref[:,i])
         j = 0
-        while np.linalg.norm(operater.decode(y)-ref[:,i])>thre and j <80:
+        while np.linalg.norm(x-ref[:,i])>thre and j <30:
             j += 1
             print('Point '+str(i)+' ,Step '+str(j)+' - MSE error in lifted space,state x, input u:')
+            if x[2]-ref[2,i]>=2*pi:
+                x[2] = x[2]-2*pi
+                y = operater.encode(x)
+            elif x[2]-ref[2,i]<=-2*pi:
+                x[2] = x[2]+2*pi
+                y = operater.encode(x)
             if i < 2: # set parameter
                 Isplot = True
             else:
@@ -310,21 +331,20 @@ def MPC_control_process_closed(model_file,ref,init_input,init_state,Q,R,rho,Nc,t
             T2 = time.perf_counter()
             t_avg += T2-T1
             # record for each step
-            x = discrete_nonlinear(x,u,Ts)
+            x = discrete_nonlinear(x,u,Ts).squeeze()
+            y = operater.encode(x)
             ref_arg = np.c_[ref_arg,ref[:,i]]
-            lifted_path = np.c_[lifted_path,operater]
-            path = np.c_[path,operater.decode(y)]
-            if path[2,-1] > pi:
-                path[2,-1] -= 2*pi
-            elif path[2,-1] < -pi:
-                path[2,-1] += 2*pi
-            print(np.square(y-lifted_ref[:,i]).mean(),path[:,-1],u)
+            path = np.c_[path,x]
+            lifted_ref_arg = np.c_[lifted_ref_arg,lifted_ref[:,i]]
+            lifted_path = np.c_[lifted_path,y]
+            print(np.linalg.norm(x[:2]-ref[:2,i]),x,u)
+        MPC_process_plot(ref_arg,path,path.shape[1],lifted=False)
         step += j
     # plot the lifted space
     MPC_process_plot(lifted_ref_arg,lifted_path,lifted_path.shape[1],lifted=True)
 
     # plot
-    MPC_process_plot(ref_arg,path,path.shape[1]-1,lifted=False)
+    MPC_process_plot(ref_arg,path,path.shape[1],lifted=False)
 
     # see the time consumption
     t_avg /= step

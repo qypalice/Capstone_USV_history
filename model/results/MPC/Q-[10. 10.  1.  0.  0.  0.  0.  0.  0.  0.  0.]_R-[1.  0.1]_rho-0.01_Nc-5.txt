@@ -1,0 +1,3 @@
+
+MSE loss: 3752.02535560684.
+Average time needed per step is 49.599920767195215 ms.

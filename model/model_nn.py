@@ -12,14 +12,12 @@ class masked_Linear(nn.Module):
         self.in_features = in_features
         self.out_features = out_features
         self.mask = torch.zeros([out_features, in_features])
-        for i in range(out_features):
-            self.mask[i,i] = 1
-            '''if i > 2:
-                if i%2 == 0:
-                    self.mask[i,i-1] = 1
-                else:
-                    self.mask[i,i+1] = 1'''
-        self.mask[:,-2:] = 1
+        for i in range(out_features-1):
+            self.mask[i,i] = 2
+            #if i%2==0:
+                #self.mask[i,i+1] = 1
+        #self.mask[-1,-3] = 1
+        self.mask[:,-2:] = 2
         self.mask = Parameter(self.mask)
         self.weight = Parameter(torch.Tensor(out_features, in_features))
         if bias:
@@ -36,7 +34,7 @@ class masked_Linear(nn.Module):
             nn.init.uniform_(self.bias, -bound, bound)
 
     def forward(self, input):
-        return F.linear(input, self.weight.masked_fill(self.mask==0, value=0), self.bias)
+        return F.linear(input, self.weight.masked_fill(self.mask==0, value=0).masked_fill(self.mask==1, value=1), self.bias)
 
     def extra_repr(self):
         return 'in_features={}, out_features={}, bias={}'.format(
@@ -59,8 +57,8 @@ class encoder(nn.Module):
 
     def forward(self, x):
         lifted_x = self.layers(x)
-        x = torch.cat((x,lifted_x),-1)
-        return x
+        #x = torch.cat((x,lifted_x),-1)
+        return lifted_x
 
 class decoder(nn.Module):
     def __init__(self,struct):
@@ -85,7 +83,7 @@ class linear_system(nn.Module):
     def __init__(self,lifeted_state):
         super(linear_system, self).__init__()
         self.layer=masked_Linear(lifeted_state+2,lifeted_state,bias=False)
-
+        
     def forward(self, x,u):
         x = self.layer(torch.cat((x,u),-1))
         return x
