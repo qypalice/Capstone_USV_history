@@ -14,9 +14,9 @@ class masked_Linear(nn.Module):
         self.mask = torch.zeros([out_features, in_features])
         for i in range(out_features-1):
             self.mask[i,i] = 2
-            #if i%2==0:
-                #self.mask[i,i+1] = 1
-        #self.mask[-1,-3] = 1
+            if i%2==0:
+                self.mask[i,i+1] = 1
+        self.mask[-1,-3] = 1
         self.mask[:,-2:] = 2
         self.mask = Parameter(self.mask)
         self.weight = Parameter(torch.Tensor(out_features, in_features))
@@ -57,8 +57,8 @@ class encoder(nn.Module):
 
     def forward(self, x):
         lifted_x = self.layers(x)
-        #x = torch.cat((x,lifted_x),-1)
-        return lifted_x
+        x = torch.cat((x,lifted_x),-1)
+        return x
 
 class decoder(nn.Module):
     def __init__(self,struct):
@@ -83,7 +83,7 @@ class linear_system(nn.Module):
     def __init__(self,lifeted_state):
         super(linear_system, self).__init__()
         self.layer=masked_Linear(lifeted_state+2,lifeted_state,bias=False)
-        
+
     def forward(self, x,u):
         x = self.layer(torch.cat((x,u),-1))
         return x

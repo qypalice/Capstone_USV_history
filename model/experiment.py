@@ -18,9 +18,9 @@ if __name__ == '__main__':
     sys.stdout = initial_out
     print(path)
     # get parameters
-    K = 10
+    K = 8
     arg = {
-        'encoder':[3,32,64,K],
+        'encoder':[3,32,64,K+3],
         'decoder':[K,128,64,32,3],
         'hyper':[1.0,3.0,0.3,1e-7,1e-7,1e-7,10]
     }
